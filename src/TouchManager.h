@@ -10,10 +10,11 @@
 #include <vector>     // For dynamic arrays
 #include <memory>     // For std::shared_ptr
 #include <algorithm>  // For std::find_if
+#include <cmath> 
+#include <Adafruit_GFX.h> //THE graphics library!
 
 /**
- * @brief Represents a group, which only contains an ID for now.
- * This object is designed to be shared by multiple shapes.
+ * @brief Groups just attach an ID to a list of objects
  */
 struct TouchGroup {
   int id;
@@ -22,132 +23,235 @@ struct TouchGroup {
   explicit TouchGroup(int groupID) : id(groupID) {}
 };
 
+
+// ----------------------------------------------------
+//  BASE CLASS FOR ALL SHAPES
+// ----------------------------------------------------
+
 /**
- * @brief Represents a single rectangular area.
- * It holds its dimensions and smart pointer to its group.
+ * @brief Base class contract for any drawable, touchable shape.
  */
-struct TouchRect {
-  int x, y, w, h;
-  std::shared_ptr<TouchGroup> group; // Pointer to the shared group
+class TouchShape {
+public:
+  // pointer to the group for shape or nullptr if not in a group.
+  std::shared_ptr<TouchGroup> group;
+  
+  // GFX properties
+  uint16_t color;
+  bool filled;
 
-  // Constructor for a rect associated with a group
-  TouchRect(int _x, int _y, int _w, int _h, std::shared_ptr<TouchGroup> _group)
-    : x(_x), y(_y), w(_w), h(_h), group(_group) {}
-
-  // Constructor for a rect with no group (e.g., a "dead" area)
-  TouchRect(int _x, int _y, int _w, int _h)
-    : x(_x), y(_y), w(_w), h(_h), group(nullptr) {}
+  // Constructor
+  TouchShape(std::shared_ptr<TouchGroup> g, uint16_t c, bool f)
+    : group(g), color(c), filled(f) {}
+  
+  // Destructor (base class best practice)
+  virtual ~TouchShape() {}
 
   /**
-   * @brief Checks if a point (px, py) is inside this rectangle.
+   * @brief Pure virtual function checks if point inside this shape.
+   * @param px The point's x-coordinate.
+   * @param py The point's y-coordinate.
+   * @return true if the point is inside, false otherwise.
    */
-  bool contains(int px, int py) const {
+  virtual bool contains(int px, int py) const = 0;
+
+  /**
+   * @brief Pure virtual function draw the shape.
+   * @param gfx Point to Adafruit_GFX.
+   */
+  virtual void draw(Adafruit_GFX* gfx) const = 0;
+};
+
+
+// ----------------------------------------------------
+//  SHAPES
+// ----------------------------------------------------
+
+/**
+ * @brief Rect shape.
+ */
+class TouchRect : public TouchShape {
+public:
+  int x, y, w, h;
+
+  TouchRect(int _x, int _y, int _w, int _h, 
+            uint16_t _color, bool _filled, std::shared_ptr<TouchGroup> _group)
+    : TouchShape(_group, _color, _filled), x(_x), y(_y), w(_w), h(_h) {}
+
+  bool contains(int px, int py) const override {
     return (px >= x) && (px < (x + w)) && (py >= y) && (py < (y + h));
+  }
+
+  void draw(Adafruit_GFX* gfx) const override {
+    if (filled) {
+      gfx->fillRect(x, y, w, h, color);
+    } else {
+      gfx->drawRect(x, y, w, h, color);
+    }
   }
 };
 
 /**
- * @brief Manages all touch groups and rectangles.
+ * @brief 'O' circle shape.
  */
-class TouchManager {
-private:
-  // Dynamic vectors
-  std::vector<std::shared_ptr<TouchGroup>> allGroups;
-  std::vector<TouchRect> allRects;
+class TouchCircle : public TouchShape {
+public:
+  int x, y, d; // Center (x, y) and diameter (d)
 
-  /**
-   * @brief Finds a group by its ID.
-   * @return A shared_ptr to the group, or nullptr if not found.
-   */
-  std::shared_ptr<TouchGroup> findGroup(int groupID) {
-    auto it = std::find_if(
-      allGroups.begin(), allGroups.end(),
-      [groupID](const auto& groupPtr) {
-        return groupPtr->id == groupID;
-      });
+  TouchCircle(int _x, int _y, int _d, 
+              uint16_t _color, bool _filled, std::shared_ptr<TouchGroup> _group)
+    : TouchShape(_group, _color, _filled), x(_x), y(_y), d(_d) {}
 
-    if (it != allGroups.end()) {
-      return *it; // Return the existing shared_ptr
-    }
-    return nullptr;
+  bool contains(int px, int py) const override {
+    // Use distance formula: (px-x)^2 + (py-y)^2 <= r^2
+    // Use int32_t to avoid overflow when squaring
+    int32_t dx = px - x;
+    int32_t dy = py - y;
+    int32_t r = d / 2;
+    return (dx * dx + dy * dy) <= (int32_t)(r * r);
   }
 
-  /**
-   * @brief Gets an existing group or creates a new one if it
-   * doesn't exist.
-   * @return A shared_ptr to the group.
-   */
-  std::shared_ptr<TouchGroup> getOrCreateGroup(int groupID) {
-    std::shared_ptr<TouchGroup> group = findGroup(groupID);
-    if (!group) {
-      // Group doesn't exist, so create it and store it
-      group = std::make_shared<TouchGroup>(groupID);
-      allGroups.push_back(group);
+  void draw(Adafruit_GFX* gfx) const override {
+    if (filled) {
+      gfx->fillCircle(x, y, d / 2, color);
+    } else {
+      gfx->drawCircle(x, y, d / 2, color);
     }
-    return group;
+  }
+};
+
+
+// ----------------------------------------------------
+//  MAIN TOUCH MANAGER CLASS
+// ----------------------------------------------------
+
+class TouchManager {
+private:
+  std::vector<std::shared_ptr<TouchGroup>> allGroups;
+  std::vector<std::shared_ptr<TouchShape>> allShapes;
+
+  std::shared_ptr<TouchGroup> getOrCreateGroup(int groupID) {
+    auto it = std::find_if(allGroups.begin(), allGroups.end(),
+                           [groupID](const auto& groupPtr) {
+                             return groupPtr->id == groupID;
+                           });
+
+    if (it != allGroups.end()) {
+      return *it; // Return existing group
+    }
+    
+    // Create new group
+    auto newGroup = std::make_shared<TouchGroup>(groupID);
+    allGroups.push_back(newGroup);
+    return newGroup;
   }
 
 public:
   TouchManager() {}
 
   /**
-   * @brief Adds a new shape and associates it with a group ID.
-   * If the group ID doesn't already exist, a new group is created.
+   * @brief Adds a new rectangle associated with a group ID.
+   * 
+   * @param x left edge
+   * @param y upper edge
+   * @param w width
+   * @param h height
+   * @param color rgb
+   * @param filled boolean
+   * @param ID
    */
-  void addRectToGroup(int x, int y, int w, int h, int groupID) {
-    // Get (or create) the shared group object
-    std::shared_ptr<TouchGroup> group = getOrCreateGroup(groupID);
-
-    // Add the new rectangle, passing it the shared_ptr to the group
-    allRects.emplace_back(x, y, w, h, group);
+  void addRect(int x, int y, int w, int h, uint16_t color, bool filled, int groupID) {
+    auto group = getOrCreateGroup(groupID);
+    allShapes.push_back(
+      std::make_shared<TouchRect>(x, y, w, h, color, filled, group)
+    );
   }
 
   /**
-   * @brief Adds a new rectangle that is NOT associated with any group.
-   * Touching this area will do nothing.
+   * @brief Adds a new rectangle NOT associated with any group.
+   * 
+   * @param x left edge
+   * @param y upper edge
+   * @param w width
+   * @param h height
+   * @param color rgb
+   * @param filled boolean
    */
-  void addRect(int x, int y, int w, int h) {
-    // Pass nullptr as the group
-    allRects.emplace_back(x, y, w, h, nullptr);
+  void addRect(int x, int y, int w, int h, uint16_t color, bool filled) {
+    allShapes.push_back(
+      std::make_shared<TouchRect>(x, y, w, h, color, filled, nullptr)
+    );
+  }
+
+  /**
+   * @brief Adds a new circle associated with a group ID.
+   * 
+   * @param x left edge
+   * @param y upper edge
+   * @param d diameter
+   * @param color rgb
+   * @param filled boolean
+   * @param ID
+   */
+  void addCircle(int x, int y, int d, uint16_t color, bool filled, int groupID) {
+    auto group = getOrCreateGroup(groupID);
+    allShapes.push_back(
+      std::make_shared<TouchCircle>(x, y, d, color, filled, group)
+    );
+  }
+
+  /**
+   * @brief Adds a new circle NOT associated with any group.
+   * 
+   * @param x left edge
+   * @param y upper edge
+   * @param d diameter
+   * @param color rgb
+   * @param filled boolean
+   */
+  void addCircle(int x, int y, int d, uint16_t color, bool filled) {
+    allShapes.push_back(
+      std::make_shared<TouchCircle>(x, y, d, color, filled, nullptr)
+    );
   }
 
   /**
    * @brief Processes a touch at (px, py).
-   * Searches the shapes in reverse order (Z-order) to find a match.
+   * Searches all shapes in reverse order (Z-order) to find a match.
    *
-   * @param px The x-coordinate of the touch.
-   * @param py The y-coordinate of the touch.
-   * @return The ID of the group that was touched, or -1 if no
-   * match or if the matched rect has no group.
+   * @return The ID of the group that was touched, or -1 if no match.
    */
   int findGroupIDAt(int px, int py) {
-    // Iterate in reverse order (from last-added to first)
-    // This way, more recently added shapes are checked first,
-    // simulating a "Z-order" (on-top)
-    for (auto it = allRects.rbegin(); it != allRects.rend(); ++it) {
-      if (it->contains(px, py)) {
+    // Iterate in reverse order (Z-order: last-added is checked first)
+    for (auto it = allShapes.rbegin(); it != allShapes.rend(); ++it) {
+      if ((*it)->contains(px, py)) {
         // Found a matching shape!
-        // Now, check if this shape actually belongs to a group.
-        if (it->group) {
-          // It does! Return the group's ID.
-          return it->group->id;
+        if ((*it)->group) {
+          return (*it)->group->id; // Return its group ID
         } else {
-          // This shape was a match, but it has no group (it's a
-          // "dead" area). We stop searching and return -1.
-          return -1;
+          return -1; // Matched a "dead" shape (no group)
         }
       }
     }
+    return -1; // No shape contained this point
+  }
 
-    // No shapes around this point
-    return -1;
+  /**
+   * @brief Draws all shapes to the screen.
+   * Iterates in forward order, so first-added is "on the bottom".
+   * @param gfx A pointer to the Adafruit_GFX display object.
+   */
+  void drawAll(Adafruit_GFX* gfx) {
+    for (const auto& shape : allShapes) {
+      shape->draw(gfx);
+    }
   }
 
   /**
    * @brief Clears all defined groups and shapes.
    */
   void clearAll() {
-      allRects.clear();
-      allGroups.clear();
+    allShapes.clear();
+    allGroups.clear();
   }
 };

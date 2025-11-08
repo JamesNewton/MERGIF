@@ -39,20 +39,22 @@ void setup() {
   // --- Define Groups and Rectangles ---
   
   // As you requested: multiple rectangles in one group.
-  Serial1.println("ID 1");
+  Serial1.println("ID 1: I1 Rx10y10h20w50cF00 Px70y10x75y30x70c00F G");
   delay(1);
-  g_touchManager.addRectToGroup(10, 10, 50, 50, 1); // Group 1, Rect 1
-  g_touchManager.addRectToGroup(70, 10, 50, 50, 1); // Group 1, Rect 2
+  g_touchManager.addRect(10, 10, 20, 50, ILI9341_RED, true, 1); // Group 1, Rect 1
+  g_touchManager.addRect(70, 10, 5, 20, ILI9341_BLUE, false, 1); // Group 1, Rect 2
 
-  // Add another group with one, larger rectangle
-  Serial1.println("ID 2");
-  g_touchManager.addRectToGroup(10, 70, 110, 50, 2); // Group 2, Rect 1
+  // Add another group with one, circle
+  Serial1.println("ID 2: I2 Ox100,y35,d25,c0F0 G");
+  g_touchManager.addCircle(100, 35, 25, ILI9341_GREEN, false, 2); // (100, 35) center, 25 diameter
 
   // Add an overlapping rect for Z-order testing
   // This rect is added LAST, so it will be "on top"
   Serial1.println("ID 99 Overlaps 1");
-  g_touchManager.addRectToGroup(40, 40, 50, 50, 99); // Group 99, Rect 1
+  g_touchManager.addRect(40, 40, 50, 50, ILI9341_PURPLE, 99); // Group 99, Rect 1
 
+  g_touchManager.drawAll(&tft);
+  
   Serial1.println("\nTesting:");
 
   // --- Run Tests ---
