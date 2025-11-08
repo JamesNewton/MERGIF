@@ -2,10 +2,12 @@
 #include "TouchManager.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
+#include <Adafruit_FT6206.h> 
 
 #define TFT_DC 26
 #define TFT_CS 28
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+Adafruit_FT6206 ts = Adafruit_FT6206(); 
 
 TouchManager g_touchManager;
 
@@ -33,6 +35,16 @@ void setup() {
   tft.setTextSize(2);
   tft.print("Ready");
 
+  Wire.setSDA(4); // Use GPIO 4 for SDA
+  Wire.setSCL(5); // Use GPIO 5 for SCL
+  Wire.begin(); 
+
+  if (! ts.begin(40)) {
+    Serial1.println(".");
+    while (1);
+  }
+  Serial1.println("Touch screen up");
+
   Serial1.begin(115200);
   Serial1.println("Ready2");
 
@@ -54,19 +66,19 @@ void setup() {
   g_touchManager.addRect(40, 40, 50, 50, ILI9341_PURPLE, 99); // Group 99, Rect 1
 
   g_touchManager.drawAll(&tft);
-  
+
   Serial1.println("\nTesting:");
 
   // --- Run Tests ---
 
   // Test 1: Hit the first rectangle of Group 1
-  simulateTouch(20, 20); // Expected: 1
+  simulateTouch(15, 20); // Expected: 1
 
   // Test 2: Hit the second rectangle of Group 1
-  simulateTouch(80, 20); // Expected: 1
+  simulateTouch(72, 15); // Expected: 1
 
   // Test 3: Hit the rectangle for Group 2
-  simulateTouch(50, 90); // Expected: 2
+  simulateTouch(100, 33); // Expected: 2
 
   // Test 4: Hit a blank area
   simulateTouch(200, 200); // Expected: -1 (No match)
@@ -79,6 +91,16 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+    if (ts.touched()) {
+    // Get the touch point
+    TS_Point p = ts.getPoint();
+
+    // For some resistive screens, you may need to adjust the order or map the coordinates.
+    // The raw data from the touch screen controller often needs conversion to the pixel range (0-240, 0-320).
+    
+    // Example: print raw coordinates to Serial Monitor
+    Serial1.print("Raw X = "); Serial1.print(p.x);
+    Serial1.print("\tRaw Y = "); Serial1.print(p.y);
+    }
   delay(100); // this speeds up the simulation
 }

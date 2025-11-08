@@ -23,7 +23,9 @@
     [ "pico:GP26", "lcd1:D/C", "green", [ "h19.51", "v-9.6" ] ],
     [ "pico:GP19", "lcd1:MOSI", "green", [ "h29.11", "v-57.56" ] ],
     [ "pico:GP16", "lcd1:MISO", "green", [ "v0.04", "h48.31", "v-86.4" ] ],
-    [ "pico:GP18", "lcd1:SCK", "green", [ "h38.71", "v0.04" ] ]
+    [ "pico:GP18", "lcd1:SCK", "green", [ "h38.71", "v0.04" ] ],
+    [ "pico:GP4", "lcd1:SDA", "green", [ "h-38.4", "v163.2", "h172.8", "v-67.2" ] ],
+    [ "lcd1:SCL", "pico:GP5", "green", [ "h-19.2", "v67.2", "h-153.6", "v-144" ] ]
   ],
   "dependencies": {}
 }
