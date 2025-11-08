@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "author": "Anonymous maker",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-pi-pico-w", "id": "pico", "top": -108.85, "left": -102.05, "attrs": {} },
+    {
+      "type": "board-ili9341-cap-touch",
+      "id": "lcd1",
+      "top": -145.28,
+      "left": 100.74,
+      "rotate": 90,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [ "pico:GP0", "$serialMonitor:RX", "", [] ],
+    [ "pico:GP1", "$serialMonitor:TX", "", [] ],
+    [ "pico:VBUS", "lcd1:VCC", "red", [ "h48.31", "v28.8" ] ],
+    [ "pico:GND.8", "lcd1:GND", "black", [ "h29.11", "v19.2" ] ],
+    [ "pico:GP28", "lcd1:CS", "green", [ "h19.51", "v9.6" ] ],
+    [ "pico:GP27", "lcd1:RST", "green", [ "h9.91", "v-9.6" ] ],
+    [ "pico:GP26", "lcd1:D/C", "green", [ "h19.51", "v-9.6" ] ],
+    [ "pico:GP19", "lcd1:MOSI", "green", [ "h29.11", "v-57.56" ] ],
+    [ "pico:GP16", "lcd1:MISO", "green", [ "v0.04", "h48.31", "v-86.4" ] ],
+    [ "pico:GP18", "lcd1:SCK", "green", [ "h38.71", "v0.04" ] ]
+  ],
+  "dependencies": {}
+}
