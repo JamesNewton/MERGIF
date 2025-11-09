@@ -13,6 +13,27 @@
 #include <cmath> 
 #include <Adafruit_GFX.h> //THE graphics library!
 
+// --- Standard GFX colors (for convenience) ---
+#define C565_BLACK        0x0000 ///<   0,   0,   0
+#define C565_NAVY         0x000F ///<   0,   0, 123
+#define C565_DARKGREEN    0x03E0 ///<   0, 125,   0
+#define C565_DARKCYAN     0x03EF ///<   0, 125, 123
+#define C565_MAROON       0x7800 ///< 123,   0,   0
+#define C565_PURPLE       0x780F ///< 123,   0, 123
+#define C565_OLIVE        0x7BE0 ///< 123, 125,   0
+#define C565_LIGHTGREY    0xC618 ///< 198, 195, 198
+#define C565_DARKGREY     0x7BEF ///< 123, 125, 123
+#define C565_BLUE         0x001F ///<   0,   0, 255
+#define C565_GREEN        0x07E0 ///<   0, 255,   0
+#define C565_CYAN         0x07FF ///<   0, 255, 255
+#define C565_RED          0xF800 ///< 255,   0,   0
+#define C565_MAGENTA      0xF81F ///< 255,   0, 255
+#define C565_YELLOW       0xFFE0 ///< 255, 255,   0
+#define C565_WHITE        0xFFFF ///< 255, 255, 255
+#define C565_ORANGE       0xFD20 ///< 255, 165,   0
+#define C565_GREENYELLOW  0xAFE5 ///< 173, 255,  41
+#define C565_PINK         0xFC18 ///< 255, 130, 198
+
 /**
  * @brief Groups just attach an ID to a list of objects
  */
