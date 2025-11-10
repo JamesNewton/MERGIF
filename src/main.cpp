@@ -60,8 +60,23 @@ TS_Point remapTouchPoint(Adafruit_GFX* tft, TS_Point t) {
   return p;
 }
 
+int n; //a global to hold accumulated digits as a number
+int attr[('Z' - 'A')]; //attributes are an array of letters
+#define LTR(x) (x - 'a')
+
+void printAttrib() {
+  for (int i = 0; i<sizeof(attr)/sizeof(attr[0]); i++) {
+    Serial1.print((char)(i + 'a'));
+    Serial1.print("="); Serial1.println(attr[i]);
+  }
+}
+
+
 void setup() {
   tft.begin();
+  g_touchManager.begin(&tft);
+  n = 0;
+
   tft.setRotation(1);
 
   tft.setTextColor(C565_WHITE);
@@ -93,12 +108,15 @@ void setup() {
   Serial1.println("ID 2: I2 Ox100,y35,d25,c0F0 G");
   g_touchManager.addCircle(100, 35, 25, C565_GREEN, false, 2); // (100, 35) center, 25 diameter
 
+  // Add a circle, not in a group
+  g_touchManager.addCircle(200, 100, 50, C565_ORANGE, true, 0); 
+  
   // Add an overlapping rect for Z-order testing
   // This rect is added LAST, so it will be "on top"
   Serial1.println("ID 99 Overlaps 1");
   g_touchManager.addRect(30, 40, 50, 50, C565_PURPLE, true, 99); // Group 99, Rect 1
 
-  g_touchManager.drawAll(&tft);
+  // g_touchManager.drawAll(&tft);
 
   Serial1.println("\nTesting:");
 
@@ -131,11 +149,47 @@ void loop() {
     TS_Point np = remapTouchPoint(&tft, ts.getPoint());
     if (np.x != p.x || np.y != p.y) {
       p = np;
+      // printAttrib();
+      // Serial1.print(n); Serial1.print(" ");
       Serial1.print(doTouch(p.x, p.y));
       Serial1.print("@ X:"); Serial1.print(p.x);
       Serial1.print("Y:"); Serial1.println(p.y);
     }
 
+  }
+  if (Serial1.available()) {
+    char c = Serial1.read();
+    Serial1.print(c);
+    if (isdigit(c)) {
+      n *= 10;
+      n += (int)(c - '0');
+      return;
+    }
+    if ('a' <= c && c <= 'z') {
+      attr[LTR(c)] = n;
+      // Serial1.print("\nslot "); Serial1.print(LTR(c));
+      // Serial1.print((char)(LTR(c) + 'a'));
+      // Serial1.print("="); Serial1.println(attr[LTR(c)]);
+      n = 0;
+      return;
+    }
+    switch (c) {
+
+      case 'Z': //Zero out the display and objects
+        tft.fillScreen(C565_BLACK);
+        g_touchManager.clearAll();
+        break;
+
+      case 'R': //Rectangle
+        g_touchManager.addRect(
+          attr[LTR('x')], attr[LTR('y')], attr[LTR('w')], attr[LTR('h')], 
+          attr[LTR('c')], true, attr[LTR('i')] 
+        );
+        break;
+      
+      default:
+        break;
+    }
   }
   delay(10); // this speeds up the simulation
 }

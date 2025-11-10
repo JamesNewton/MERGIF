@@ -150,8 +150,10 @@ class TouchManager {
 private:
   std::vector<std::shared_ptr<TouchGroup>> allGroups;
   std::vector<std::shared_ptr<TouchShape>> allShapes;
+  Adafruit_GFX* m_gfx; // Pointer to the registered display
 
   std::shared_ptr<TouchGroup> getOrCreateGroup(int groupID) {
+    if (!groupID) return nullptr;
     auto it = std::find_if(allGroups.begin(), allGroups.end(),
                            [groupID](const auto& groupPtr) {
                              return groupPtr->id == groupID;
@@ -168,7 +170,15 @@ private:
   }
 
 public:
-  TouchManager() {}
+  TouchManager() : m_gfx(nullptr) {}
+
+  /**
+   * @brief Binds the manager to a display for auto-drawing.
+   * @param gfx A pointer to the Adafruit_GFX display object.
+   */
+  void begin(Adafruit_GFX* gfx) {
+    m_gfx = gfx;
+  }
 
   /**
    * @brief Adds a new rectangle associated with a group ID.
@@ -179,29 +189,17 @@ public:
    * @param h height
    * @param color rgb
    * @param filled boolean
-   * @param ID
+   * @param ID group ID or 0 aka nullptr
    */
   void addRect(int x, int y, int w, int h, uint16_t color, bool filled, int groupID) {
     auto group = getOrCreateGroup(groupID);
-    allShapes.push_back(
-      std::make_shared<TouchRect>(x, y, w, h, color, filled, group)
-    );
-  }
-
-  /**
-   * @brief Adds a new rectangle NOT associated with any group.
-   * 
-   * @param x left edge
-   * @param y upper edge
-   * @param w width
-   * @param h height
-   * @param color rgb
-   * @param filled boolean
-   */
-  void addRect(int x, int y, int w, int h, uint16_t color, bool filled) {
-    allShapes.push_back(
-      std::make_shared<TouchRect>(x, y, w, h, color, filled, nullptr)
-    );
+    auto newShape = std::make_shared<TouchRect>(x, y, w, h, color, filled, group);
+    // Add it to the list
+    allShapes.push_back(newShape);
+    // Draw it if the display is registered
+    if (m_gfx) {
+      newShape->draw(m_gfx);
+    }
   }
 
   /**
@@ -216,24 +214,11 @@ public:
    */
   void addCircle(int x, int y, int d, uint16_t color, bool filled, int groupID) {
     auto group = getOrCreateGroup(groupID);
-    allShapes.push_back(
-      std::make_shared<TouchCircle>(x, y, d, color, filled, group)
-    );
-  }
-
-  /**
-   * @brief Adds a new circle NOT associated with any group.
-   * 
-   * @param x left edge
-   * @param y upper edge
-   * @param d diameter
-   * @param color rgb
-   * @param filled boolean
-   */
-  void addCircle(int x, int y, int d, uint16_t color, bool filled) {
-    allShapes.push_back(
-      std::make_shared<TouchCircle>(x, y, d, color, filled, nullptr)
-    );
+    auto newShape = std::make_shared<TouchCircle>(x, y, d, color, filled, group);
+    allShapes.push_back(newShape);
+    if (m_gfx) {
+      newShape->draw(m_gfx);
+    }
   }
 
   /**
