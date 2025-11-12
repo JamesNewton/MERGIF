@@ -60,21 +60,37 @@ TS_Point remapTouchPoint(Adafruit_GFX* tft, TS_Point t) {
   return p;
 }
 
+uint16_t radix;
 int n; //a global to hold accumulated digits as a number
 int attr[('Z' - 'A')]; //attributes are an array of letters
 #define LTR(x) (x - 'a')
 
+TS_Point p;
+std::vector<GFXPoint> points;
+
 void printAttrib() {
   for (int i = 0; i<sizeof(attr)/sizeof(attr[0]); i++) {
     Serial1.print((char)(i + 'a'));
-    Serial1.print("="); Serial1.println(attr[i]);
+    Serial1.print("="); Serial1.print(attr[i]);
+    Serial1.print(", "); 
   }
+  Serial1.println(".");
+}
+
+void printPoints() {
+  for (int i = 0; i<points.size(); i++) {
+    Serial1.print(i); Serial1.print("=("); 
+    Serial1.print(points[i].x); Serial1.print(", "); 
+    Serial1.print(points[i].y); Serial1.print(") ");
+  }
+  Serial1.println(".");
 }
 
 
 void setup() {
   tft.begin();
   g_touchManager.begin(&tft);
+  radix = 10;
   n = 0;
 
   tft.setRotation(1);
@@ -99,22 +115,32 @@ void setup() {
   // --- Define Groups and Rectangles ---
   
   // As you requested: multiple rectangles in one group.
-  Serial1.println("ID 1: I1 Rx10y10h20w50cF00 Px70y10x75y30x70c00F G");
-  delay(1);
+  Serial1.println("1i 10x 20y 40h 50w #f800C R");
   g_touchManager.addRect(10, 20, 40, 50, C565_RED, true, 1); // Group 1, Rect 1
+  Serial1.println("1i 70x 10y 30h 20w #001fC R");
   g_touchManager.addRect(70, 10, 30, 20, C565_BLUE, false, 1); // Group 1, Rect 2
 
   // Add another group with one, circle
-  Serial1.println("ID 2: I2 Ox100,y35,d25,c0F0 G");
+  Serial1.println("2i 100x 35y 25d #07e0C O");
   g_touchManager.addCircle(100, 35, 25, C565_GREEN, false, 2); // (100, 35) center, 25 diameter
 
   // Add a circle, not in a group
+  Serial1.println("0i 100x 35y 25d #fd20C O");
   g_touchManager.addCircle(200, 100, 50, C565_ORANGE, true, 0); 
   
   // Add an overlapping rect for Z-order testing
   // This rect is added LAST, so it will be "on top"
-  Serial1.println("ID 99 Overlaps 1");
+  Serial1.println("99i 30x 40y 50w 50h 30735c R");
   g_touchManager.addRect(30, 40, 50, 50, C565_PURPLE, true, 99); // Group 99, Rect 1
+
+  Serial1.println("3i 220x 20y P 270x 20y P ");
+  Serial1.println("220x 70y P 270x 70y P #ffe0C L");
+  points.push_back({220, 20});
+  points.push_back({270, 20});
+  points.push_back({220, 70});
+  points.push_back({270, 70});
+  g_touchManager.addPolygon(points, C565_YELLOW, 3); 
+  points.clear();
 
   // g_touchManager.drawAll(&tft);
 
@@ -141,7 +167,6 @@ void setup() {
 
 }
 
-TS_Point p;
 
 void loop() {
   if (ts.touched()) {
@@ -160,19 +185,17 @@ void loop() {
   if (Serial1.available()) {
     char c = Serial1.read();
     Serial1.print(c);
-    if (isdigit(c)) {
-      n *= 10;
-      n += (int)(c - '0');
+    if (isdigit(c) || (radix > 10 && c >= 'a' && c <= 'f')) {
+      //Note: don't use isHexadecimalDigit(c) so that 'C' (or whatever) can pop us out
+      n *= radix;
+      if (radix > 10 && isHexadecimalDigit(c)) { //a-f are numbers now
+        n += (int)(c - 'a' + 10);
+      } else {
+        n += (int)(c - '0');
+      }
       return;
     }
-    if ('a' <= c && c <= 'z') {
-      attr[LTR(c)] = n;
-      // Serial1.print("\nslot "); Serial1.print(LTR(c));
-      // Serial1.print((char)(LTR(c) + 'a'));
-      // Serial1.print("="); Serial1.println(attr[LTR(c)]);
-      n = 0;
-      return;
-    }
+
     switch (c) {
 
       case 'Z': //Zero out the display and objects
@@ -187,9 +210,52 @@ void loop() {
         );
         break;
       
+      case 'O': //Circle
+        g_touchManager.addCircle(
+          attr[LTR('x')], attr[LTR('y')], attr[LTR('d')], 
+          attr[LTR('c')], true, attr[LTR('i')] 
+        );
+        break;
+
+      case 'P': //Point
+        points.push_back(
+          (GFXPoint){(int16_t)attr[LTR('x')], (int16_t)attr[LTR('y')]}
+        );
+        break;
+
+      case 'L': //Line
+        g_touchManager.addPolygon(points, attr[LTR('c')], attr[LTR('i')]);
+        points.clear();
+        break;
+
+      case '#': //Hex set radix to 16
+        radix = 16;
+        break;
+
+      case 'C': //Color (also 'c' if not in hex)
+        attr[LTR('c')] = n;
+        // Serial1.print(n); Serial1.print(" "); Serial1.println(n, HEX);
+        n = 0; radix = 10;
+        break; 
+
+      case '?':
+        printAttrib();
+        printPoints();
+        break;
+
       default:
         break;
     }
+
+    if ('a' <= c && c <= 'z') {
+      attr[LTR(c)] = n;
+      // Serial1.print("\nslot "); Serial1.print(LTR(c));
+      // Serial1.print((char)(LTR(c) + 'a'));
+      // Serial1.print("="); Serial1.println(attr[LTR(c)]);
+      radix = 10; //back to decimal
+      n = 0;
+      return;
+    }
   }
-  delay(10); // this speeds up the simulation
+  delay(2); // this speeds up the simulation
 }

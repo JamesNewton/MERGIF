@@ -35,6 +35,14 @@
 #define C565_PINK         0xFC18 ///< 255, 130, 198
 
 /**
+ * @brief A X/Y coordinate struct of int16 for GFX operations.
+ */
+struct GFXPoint {
+  int16_t x;
+  int16_t y;
+};
+
+/**
  * @brief Groups just attach an ID to a list of objects
  */
 struct TouchGroup {
@@ -141,6 +149,59 @@ public:
   }
 };
 
+/**
+ * @brief A polygon TouchShape defined by a variable list of points.
+ */
+class TouchPolygon : public TouchShape {
+public:
+  // Store a copy of the points
+  std::vector<GFXPoint> points;
+
+  TouchPolygon(const std::vector<GFXPoint>& _points,
+               uint16_t _color, bool _filled, std::shared_ptr<TouchGroup> _group)
+    : TouchShape(_group, _color, _filled), points(_points) {}
+    //note Adafruit_GFX can't fill polygons so we won't use the filled option
+
+  /**
+   * @brief Draws a polygon outline by connecting all points with lines.
+   */
+  void draw(Adafruit_GFX* gfx) const override {
+    if (points.size() < 2) {
+      return; // Need at least 2 points to draw a line
+      // TODO figure out a way to return an error
+    }
+
+    for (size_t i = 0; i < points.size() - 1; ++i) {
+      gfx->drawLine(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y, color);
+    }
+    // If we have at least 3 points, draw the final line connecting the last point back to the first
+    if (points.size() >= 3) {
+      gfx->drawLine(points.back().x, points.back().y, points.front().x, points.front().y, color);
+      }
+    }
+
+  /**
+   * @brief Checks if a point is inside the polygon using the
+   * Ray Casting (even-odd) algorithm. Works for non-convex shapes.
+   */
+  bool contains(int px, int py) const override {
+    int n = points.size();
+    // if there are less than 3 points, it can't contain an area.
+    if (n < 3) {
+      return false;
+    }
+
+    bool isInside = false; //start false, 'cause an odd number of flips gives us a true
+    // Loop through all edges (i, j) where j is the previous vertex
+    for (int i = 0, j = n - 1; i < n; j = i++) {
+      if (((points[i].y > py) != (points[j].y > py)) &&
+          (px < (points[j].x - points[i].x) * (py - points[i].y) / (points[j].y - points[i].y) + points[i].x)) {
+        isInside = !isInside; // Flip the state
+      }
+    }
+    return isInside;
+  }
+};
 
 // ----------------------------------------------------
 //  MAIN TOUCH MANAGER CLASS
@@ -215,6 +276,19 @@ public:
   void addCircle(int x, int y, int d, uint16_t color, bool filled, int groupID) {
     auto group = getOrCreateGroup(groupID);
     auto newShape = std::make_shared<TouchCircle>(x, y, d, color, filled, group);
+    allShapes.push_back(newShape);
+    if (m_gfx) {
+      newShape->draw(m_gfx);
+    }
+  }
+
+  /**
+   * @brief Adds a new polygon associated with a group ID.
+   * @param points A std::vector of GFXPoint structs.
+   */
+  void addPolygon(const std::vector<GFXPoint>& points, uint16_t color, int groupID) {
+    auto group = getOrCreateGroup(groupID);
+    auto newShape = std::make_shared<TouchPolygon>(points, color, false, group);
     allShapes.push_back(newShape);
     if (m_gfx) {
       newShape->draw(m_gfx);
