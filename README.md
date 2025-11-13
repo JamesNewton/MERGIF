@@ -17,33 +17,33 @@ It ends up a bit like a g-code. But postfix at least for now. e.g. not `X10`, bu
 
 # Commands
 
-| Commands | Attributes | Description |
-|---|---|---|
-| `Z`ero  | | Clear the display, erase all groups and areas |
-| `I`d    | num | Specify a group by setting the ID number |
-| `O`     |  x y diameter color | A filled in circle |
-| `P`oint |   x y P \[x y P ...\] | Just a way to save a list of points | 
-| `L`ine  |  color width x y \[x y ...\] | A series of lines from saved 'P'oints (which are cleared) |
-| `R`ect  |  x y width height | A filled in rectangle (use Path for outlines) |
-| `A`rc   |  x y diameter begin end color | An arc or non-filled circle | 
-| `T`ext  |  x y color height | Text. The characters are placed between the T and the attribues |
-| `M`ap   |   pixel data | See below|
+| Commands | Attributes           | Description |
+| ---      | ---                  | ---         |
+| `Z`ero   |                      | Clear the display, erase all groups and areas |
+| `I`d     | num                  | Specify a group by setting the ID number |
+| `O`      | x y diameter color   | A filled in circle |
+| `P`oint  | x y P \[x y P ...\]  | Just a way to save a list of points | 
+| `L`ine   | color width          | A series of lines from saved 'P'oints (which are cleared) |
+| `R`ect   | x y width height     | A filled in rectangle (use Path for outlines) |
+| `T`ext   | x y color height     | Text. The characters are placed between the T and the attribues |
+| `M`ap    | pixel data           | See below|
+| `A`rc    | x y diameter begin end color | An arc or non-filled circle | 
 
 # Attributes 
 
-| Attributes |  |
-|---|---|
-| `x` | 0 to display width |
-| `y` | 0 to display length |
-| `w`idth | + integer |
-| `h`eight | + integer |
+| Attributes | Description |
+| ---        | ---         |
+| `x`        | 0 to display width |
+| `y`        | 0 to display length |
+| `w`idth    | + integer |
+| `h`eight   | + integer |
 | `d`iameter | 0 to minimum of display width and height |
-| `c`olor | RGB 565 value, use # for hex but then uppercase C to end |
-| `b`egin | Starting arc degrees 0-360 |
-| `e`nd | Ending arc degrees 0-360 |
-| `#` | set radix (default hex) for this number | 
-| `S`ize? | Future features |
-| `F`ont?  |  " | 
+| `#`        | set radix (default hex) for this number | 
+| `c`olor    | RGB 565 value, use # for hex but then uppercase C to end |
+| `b`egin    | Starting arc degrees 0-360 |
+| `e`nd      | Ending arc degrees 0-360 |
+| `S`ize?    | Future features |
+| `F`ont?    |  " | 
 
 # Examples:
 
@@ -117,10 +117,6 @@ Radix 1 is a special binary format using `#` and ` ` to be a clearer image than 
   ##  
 M
 ```
-
-The code, if there is any interest in developing it, would be the following:
-- an interpreter for the commands which make calls to a graphics library like Adafruit, or LVGL
-- a lookup table for areas in a group which translates touchscreen clicks into group IDs
 
 
 ## Notes

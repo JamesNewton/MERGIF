@@ -71,7 +71,13 @@ std::vector<GFXPoint> points;
 void printAttrib() {
   for (int i = 0; i<sizeof(attr)/sizeof(attr[0]); i++) {
     Serial1.print((char)(i + 'a'));
-    Serial1.print("="); Serial1.print(attr[i]);
+    Serial1.print("="); 
+    if ('c' == i + 'a') {
+      Serial1.print("#"); 
+      Serial1.print(attr[i], HEX);
+    } else {
+      Serial1.print(attr[i]);
+    }
     Serial1.print(", "); 
   }
   Serial1.println(".");
@@ -188,11 +194,12 @@ void loop() {
     if (isdigit(c) || (radix > 10 && c >= 'a' && c <= 'f')) {
       //Note: don't use isHexadecimalDigit(c) so that 'C' (or whatever) can pop us out
       n *= radix;
-      if (radix > 10 && isHexadecimalDigit(c)) { //a-f are numbers now
+      if (radix > 10 && c >= 'a' && c <= 'f') { //a-f are numbers now
         n += (int)(c - 'a' + 10);
       } else {
         n += (int)(c - '0');
       }
+      // Serial1.print("\n");Serial1.print(radix); Serial1.print(" "); Serial1.println(n); 
       return;
     }
 
@@ -201,6 +208,10 @@ void loop() {
       case 'Z': //Zero out the display and objects
         tft.fillScreen(C565_BLACK);
         g_touchManager.clearAll();
+        for (int i = 0; i<sizeof(attr)/sizeof(attr[0]); i++) { 
+          attr[i] = 0; 
+        }
+        points.clear(); n = 0; radix = 10;
         break;
 
       case 'R': //Rectangle
@@ -208,6 +219,7 @@ void loop() {
           attr[LTR('x')], attr[LTR('y')], attr[LTR('w')], attr[LTR('h')], 
           attr[LTR('c')], true, attr[LTR('i')] 
         );
+        n = 0; radix = 10;
         break;
       
       case 'O': //Circle
@@ -215,6 +227,7 @@ void loop() {
           attr[LTR('x')], attr[LTR('y')], attr[LTR('d')], 
           attr[LTR('c')], true, attr[LTR('i')] 
         );
+        n = 0; radix = 10;
         break;
 
       case 'P': //Point
@@ -225,11 +238,12 @@ void loop() {
 
       case 'L': //Line
         g_touchManager.addPolygon(points, attr[LTR('c')], attr[LTR('i')]);
-        points.clear();
+        points.clear(); n = 0; radix = 10;
         break;
 
       case '#': //Hex set radix to 16
-        radix = 16;
+        radix = (0 == n ? 16 : n);
+        n = 0;
         break;
 
       case 'C': //Color (also 'c' if not in hex)
