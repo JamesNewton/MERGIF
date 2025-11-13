@@ -20,7 +20,6 @@ It ends up a bit like a g-code. But postfix at least for now. e.g. not `X10`, bu
 | Commands | Attributes           | Description |
 | ---      | ---                  | ---         |
 | `Z`ero   |                      | Clear the display, erase all groups and areas |
-| `I`d     | num                  | Specify a group by setting the ID number |
 | `O`      | x y diameter color   | A filled in circle |
 | `P`oint  | x y P \[x y P ...\]  | Just a way to save a list of points | 
 | `L`ine   | color width          | A series of lines from saved 'P'oints (which are cleared) |
@@ -33,13 +32,14 @@ It ends up a bit like a g-code. But postfix at least for now. e.g. not `X10`, bu
 
 | Attributes | Description |
 | ---        | ---         |
+| `i`d       | Specify a group by setting the ID number |
 | `x`        | 0 to display width |
 | `y`        | 0 to display length |
 | `w`idth    | + integer |
 | `h`eight   | + integer |
 | `d`iameter | 0 to minimum of display width and height |
 | `#`        | set radix (default hex) for this number | 
-| `c`olor    | RGB 565 value, use # for hex but then uppercase C to end |
+| `C`olor    | RGB 565 value, use # for hex but only w/uppercase C to end |
 | `b`egin    | Starting arc degrees 0-360 |
 | `e`nd      | Ending arc degrees 0-360 |
 | `S`ize?    | Future features |
@@ -52,7 +52,8 @@ It ends up a bit like a g-code. But postfix at least for now. e.g. not `X10`, bu
 Draw a line from 100,100 to 200,100 colored white. 
 It starts with a Point at 100,100 and another at 200x100 
 with a color setting of ffff (RGB all fully on) which is in hex (#)
-and then with all that set up, we can draw the Line.
+and then with all that set up, we can draw the Line. Note that we use C 
+instead of c to set the color so that hex c is possible.
 
 `1i 10x 20y 40h 50w #f800C R`
 
