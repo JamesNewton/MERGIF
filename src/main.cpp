@@ -6,6 +6,7 @@
 
 #define TFT_DC 26
 #define TFT_CS 28
+#define TFT_ORENTATION 1
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 Adafruit_FT6206 ts = Adafruit_FT6206(); 
 
@@ -64,6 +65,9 @@ uint16_t radix;
 int n; //a global to hold accumulated digits as a number
 int attr[('Z' - 'A')]; //attributes are an array of letters
 #define LTR(x) (x - 'a')
+char c;
+boolean quoting;
+String text;
 
 TS_Point p;
 std::vector<GFXPoint> points;
@@ -97,7 +101,11 @@ void setup() {
   tft.begin();
   g_touchManager.begin(&tft);
   radix = 10;
-  n = 0;
+  n = 0; //current number in radix
+  c = 0; //current character
+  quoting = false; //are we taking in quoted text?
+  text = ""; //The quoted text
+
 
   tft.setRotation(1);
 
@@ -116,7 +124,15 @@ void setup() {
   Serial1.println("Touch screen up");
 
   Serial1.begin(115200);
-  Serial1.println("Ready2");
+  // Serial1.println("Ready2");
+  g_touchManager.addText( 
+    0, //X
+    0, //Y
+    "Ready2", 0, C565_YELLOW, 
+    1 + 1, //size
+    (0 + TFT_ORENTATION) % 4, //direction
+    0  //ID
+  );
 
   // --- Define Groups and Rectangles ---
   
@@ -189,8 +205,32 @@ void loop() {
 
   }
   if (Serial1.available()) {
-    char c = Serial1.read();
+    if (Serial1.peek() == 34) { //about to get a quote
+      if (c == 34) { //getting a double quote
+        if (quoting) {// just two quotes
+          text = ""; //empty string
+        } else { // three quotes
+          text += '"'; //this is an escaped quote
+          quoting = true; //keep quoting
+        }
+      } else { //single quote
+        if (quoting) { //end the quoted string
+          quoting = false;
+        } else {
+          quoting = true;
+          // Serial1.println(">");
+          text = ""; //start a new string
+        }
+      }
+      Serial1.print(c = Serial1.read()); //quote managed
+      return;
+    }
+    c = Serial1.read();
     Serial1.print(c);
+    if (quoting) {
+      text += c;
+      return;
+    }
     if (isdigit(c) || (radix > 10 && c >= 'a' && c <= 'f')) {
       //Note: don't use isHexadecimalDigit(c) so that 'C' (or whatever) can pop us out
       n *= radix;
@@ -212,6 +252,7 @@ void loop() {
           attr[i] = 0; 
         }
         points.clear(); n = 0; radix = 10;
+        delay(100);
         break;
 
       case 'R': //Rectangle
@@ -252,6 +293,17 @@ void loop() {
         n = 0; radix = 10;
         break; 
 
+      case 'T': //Text
+        Serial1.println(text);
+        g_touchManager.addText(
+          attr[LTR('x')], attr[LTR('y')], text.c_str(), attr[LTR('f')], 
+          attr[LTR('c')], 
+          attr[LTR('s')] + 1, //size default is 1
+          (attr[LTR('d')] + TFT_ORENTATION) % 4, //orentation; relate to display orientation
+          attr[LTR('i')]  
+        );
+        break;
+
       case '?':
         printAttrib();
         printPoints();
@@ -271,5 +323,5 @@ void loop() {
       return;
     }
   }
-  delay(2); // this speeds up the simulation
+  delay(100); // this speeds up the simulation
 }

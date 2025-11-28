@@ -10,6 +10,7 @@
 #include <vector>     // For dynamic arrays
 #include <memory>     // For std::shared_ptr
 #include <algorithm>  // For std::find_if
+#include <string>     // For std::string
 #include <cmath> 
 #include <Adafruit_GFX.h> //THE graphics library!
 
@@ -203,6 +204,74 @@ public:
   }
 };
 
+class TouchText : public TouchShape {
+public:
+  std::string text;
+  int x, y;
+  int fontIndex;
+  uint16_t color;
+  uint8_t size;
+  uint8_t direction; // Rotation (0-3)
+
+  // We need to look up fonts, so we need a pointer to the font table
+  const std::vector<const GFXfont*>* fontTable;
+
+  // Cached bounds for touch detection, 
+  // "mutable" so we can update these inside the const draw() function
+  mutable int16_t bX, bY;
+  mutable uint16_t bW, bH;
+  mutable bool boundsCalculated;
+
+  TouchText(int _x, int _y, std::string _text, int _fontIdx, 
+            uint16_t _color, uint8_t _size, uint8_t _dir,
+            std::shared_ptr<TouchGroup> _group,
+            const std::vector<const GFXfont*>* _fonts)
+    : TouchShape(_group, _color, false), // Filled doesn't apply to text
+      x(_x), y(_y), text(_text), fontIndex(_fontIdx), 
+      color(_color), size(_size), direction(_dir),
+      fontTable(_fonts), boundsCalculated(false) {}
+
+  void draw(Adafruit_GFX* gfx) const override {
+    // 1. Save previous state
+    uint8_t oldRot = gfx->getRotation();
+    // We don't strictly need to save cursor/color as they are volatile anyway
+
+    // 2. Set Font (Bounds Check the index!)
+    if (fontTable && fontIndex >= 0 && fontIndex < (int)fontTable->size()) {
+      gfx->setFont((*fontTable)[fontIndex]);
+    } else {
+      gfx->setFont(NULL); // Fallback to default system font
+    }
+
+    // 3. Apply User Settings
+    gfx->setRotation(direction);
+    gfx->setCursor(x, y);
+    gfx->setTextColor(color);
+    gfx->setTextSize(size);
+
+    // 4. Calculate Bounds (If not done yet)
+    // We do this here because we need the GFX context to measure text
+    if (!boundsCalculated) {
+      gfx->getTextBounds(text.c_str(), x, y, &bX, &bY, &bW, &bH);
+      boundsCalculated = true;
+    }
+
+    // 5. Print
+    gfx->print(text.c_str());
+
+    // 6. Restore Rotation (Crucial!)
+    gfx->setRotation(oldRot);
+  }
+
+  bool contains(int px, int py) const override {
+    // If we haven't drawn yet, we don't know the size, so we can't be touched.
+    if (!boundsCalculated) return false;
+
+    // Standard rectangle check using the calculated bounds
+    return (px >= bX) && (px < (bX + bW)) && (py >= bY) && (py < (bY + bH));
+  }
+};
+
 // ----------------------------------------------------
 //  MAIN TOUCH MANAGER CLASS
 // ----------------------------------------------------
@@ -212,6 +281,8 @@ private:
   std::vector<std::shared_ptr<TouchGroup>> allGroups;
   std::vector<std::shared_ptr<TouchShape>> allShapes;
   Adafruit_GFX* m_gfx; // Pointer to the registered display
+
+  std::vector<const GFXfont*> fontTable;
 
   std::shared_ptr<TouchGroup> getOrCreateGroup(int groupID) {
     if (!groupID) return nullptr;
@@ -289,6 +360,25 @@ public:
   void addPolygon(const std::vector<GFXPoint>& points, uint16_t color, int groupID) {
     auto group = getOrCreateGroup(groupID);
     auto newShape = std::make_shared<TouchPolygon>(points, color, false, group);
+    allShapes.push_back(newShape);
+    if (m_gfx) {
+      newShape->draw(m_gfx);
+    }
+  }
+
+  // Returns the index of the font to be used later
+  int addFont(const GFXfont* font) {
+    fontTable.push_back(font);
+    return fontTable.size() - 1;
+  }
+
+  void addText(int x, int y, std::string text, int fontIndex, 
+               uint16_t color, uint8_t size, uint8_t direction, int groupID) {
+    auto group = getOrCreateGroup(groupID);
+    // Pass the pointer to our fontTable so the object can look it up later
+    auto newShape = std::make_shared<TouchText>(
+      x, y, text, fontIndex, color, size, direction, group, &fontTable
+    );
     allShapes.push_back(newShape);
     if (m_gfx) {
       newShape->draw(m_gfx);

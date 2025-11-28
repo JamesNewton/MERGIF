@@ -78,7 +78,7 @@ https://wokwi.com/projects/446578045170487297
 ### Text / Font
 
 The original fonts via GFX are a bit sad, but they have been expanded of late.
-'d' could be re-used as direction. 's' for size.
+'f' to set the font face. 'd' could be re-used as direction. 's' for size.
 
 ### Arc
 
