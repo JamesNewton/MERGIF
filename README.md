@@ -73,12 +73,19 @@ A live example with test code (no command interpreter yet) is available at:
 https://wokwi.com/projects/446578045170487297
 
 
-## Future
-
 ### Text / Font
 
 The original fonts via GFX are a bit sad, but they have been expanded of late.
 'f' to set the font face. 'd' could be re-used as direction. 's' for size.
+
+`10x 80y 255C 1s "ABC""DE" T`
+
+Prints `ABC"DE` at 10,80 in a blue double size font. 
+Size is automatically increased by 1 because the size parameter in GFX is 1 based.
+Direction is increased by the TFT_DIRECTION define modulus 4 to make portrait the default.
+Quotes can be included by double quoting. e.g. "" puts a " in the string. 
+
+## Future
 
 ### Arc
 
