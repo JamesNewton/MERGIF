@@ -27,6 +27,7 @@ It ends up a bit like a g-code. But postfix at least for now. e.g. not `X10`, bu
 | `T`ext   | x y color height     | Text. The characters are placed between the T and the attribues |
 | `M`ap    | pixel data           | See below|
 | `A`rc    | x y diameter begin end color | An arc or non-filled circle | 
+| `G`raph  | x y w h , series     | Plots a graph of points | 
 
 # Attributes 
 
@@ -39,6 +40,7 @@ It ends up a bit like a g-code. But postfix at least for now. e.g. not `X10`, bu
 | `h`eight   | + integer |
 | `d`iameter | 0 to minimum of display width and height |
 | `#`        | set radix (default hex) for this number | 
+| `,`        | pushes integer onto a series |
 | `C`olor    | RGB 565 value, use # for hex but only w/uppercase C to end |
 | `b`egin    | Starting arc degrees 0-360 |
 | `e`nd      | Ending arc degrees 0-360 |
@@ -130,7 +132,6 @@ M
 ## Notes
 
 Unused letters:
-G
 J 
 K
 N

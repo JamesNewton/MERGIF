@@ -72,6 +72,9 @@ String text;
 TS_Point p;
 std::vector<GFXPoint> points;
 
+std::vector<int> series;
+std::vector<std::vector<int>> graph;
+
 void printAttrib() {
   for (int i = 0; i<sizeof(attr)/sizeof(attr[0]); i++) {
     Serial1.print((char)(i + 'a'));
@@ -303,6 +306,31 @@ void loop() {
           attr[LTR('i')]  
         );
         break;
+
+      case ',': //series
+        series.push_back(n);
+        n = 0; radix = 10;
+        break;
+
+      case 'G': { //Graph
+        series.push_back(n);
+        n = 0; radix = 10;
+        graph.push_back(series);
+        int y_count = attr[LTR('w')];
+        while (graph.size() > y_count) {
+          graph.erase(graph.begin());
+        }
+        Serial1.println("");
+        for (const auto& aseries : graph) {
+          for (const auto& element : aseries) {
+            Serial1.print(element);
+            Serial1.print(",\t");
+          }
+          Serial1.println("");
+        }
+        series.clear();
+        break;
+      }
 
       case '?':
         printAttrib();
