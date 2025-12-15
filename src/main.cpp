@@ -7,6 +7,9 @@
 #define TFT_DC 26
 #define TFT_CS 28
 #define TFT_ORENTATION 1
+#define demo
+#define testing
+
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 Adafruit_FT6206 ts = Adafruit_FT6206(); 
 
@@ -62,12 +65,12 @@ TS_Point remapTouchPoint(Adafruit_GFX* tft, TS_Point t) {
 }
 
 uint16_t radix;
+char c; //a global to take in commands
 int n; //a global to hold accumulated digits as a number
 int attr[('Z' - 'A')]; //attributes are an array of letters
 #define LTR(x) (x - 'a')
-char c;
-boolean quoting;
-String text;
+boolean quoting; //track quoting state
+String text; //track quoted text
 
 TS_Point p;
 std::vector<GFXPoint> points;
@@ -124,9 +127,11 @@ void setup() {
     Serial1.println(".");
     while (1);
   }
-  Serial1.println("Touch screen up");
 
   Serial1.begin(115200);
+
+#ifdef demo
+
   // Serial1.println("Ready2");
   g_touchManager.addText( 
     0, //X
@@ -139,7 +144,7 @@ void setup() {
 
   // --- Define Groups and Rectangles ---
   
-  // As you requested: multiple rectangles in one group.
+  // Draw multiple rectangles in one group.
   Serial1.println("1i 10x 20y 40h 50w #f800C R");
   g_touchManager.addRect(10, 20, 40, 50, C565_RED, true, 1); // Group 1, Rect 1
   Serial1.println("1i 70x 10y 30h 20w #001fC R");
@@ -168,10 +173,11 @@ void setup() {
   points.clear();
 
   // g_touchManager.drawAll(&tft);
+#endif
 
-  Serial1.println("\nTesting:");
-
-  // --- Run Tests ---
+#ifdef testing
+  Serial1.print("\nTesting ");
+  Serial1.flush();
 
   // Test 1: Hit the first rectangle of Group 1
   if(1 != doTouch(15, 20)) Serial1.println("Error: 15,20 should be in group 1");
@@ -189,6 +195,9 @@ void setup() {
   // Group 1 (10,10,50,50) and Group 99 (40,40,50,50).
   // Since Group 99 was added last, it should win.
   if(99 != doTouch(45, 45)) Serial1.println("Error: 45,45 should be in group 99"); 
+  Serial1.println(" completed");
+
+  #endif
 
 }
 
