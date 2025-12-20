@@ -139,5 +139,16 @@ Q
 U
 V
 
+## FAQ:
+
+- "Why not Nextron, et all?" This is open source, and simple; it doesn't require libraries or binary commands. Simple. FOSS. Cheap. At this points, it's basically a minimum viable project, and I would welcome anyones help / forks / pull requests / etc...
+
+- "Why not LVGL?" because it's complex. But I would love for you to add that. 
+
+- "Why not put the command letter first?" the things I love about postfix is that it makes tiny interpreters like the one I implemented there REALLY simple... and simple code is (perhaps) harder to mess up while not being THAT much harder to use. Right? No? Ok... 
+
+- "Why Pi Pico?" super easy to use e.g. drop a UF2 on the Pi Pico in USB mode, connect some wires, send easy to remember human readable commands.
+
+
 Used letters:
 ABCDEFGHILMOPRSTWYXZ
