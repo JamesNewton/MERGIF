@@ -176,7 +176,7 @@ public:
       gfx->drawLine(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y, color);
     }
     // If we have at least 3 points, draw the final line connecting the last point back to the first
-    if (points.size() >= 3) {
+    if (points.size() >= 3 && filled) {
       gfx->drawLine(points.back().x, points.back().y, points.front().x, points.front().y, color);
       }
     }
@@ -357,9 +357,9 @@ public:
    * @brief Adds a new polygon associated with a group ID.
    * @param points A std::vector of GFXPoint structs.
    */
-  void addPolygon(const std::vector<GFXPoint>& points, uint16_t color, int groupID) {
+  void addPolygon(const std::vector<GFXPoint>& points, uint16_t color, bool filled = true, int groupID = 0) {
     auto group = getOrCreateGroup(groupID);
-    auto newShape = std::make_shared<TouchPolygon>(points, color, false, group);
+    auto newShape = std::make_shared<TouchPolygon>(points, color, filled, group);
     allShapes.push_back(newShape);
     if (m_gfx) {
       newShape->draw(m_gfx);

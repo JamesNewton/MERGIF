@@ -22,7 +22,8 @@ It ends up a bit like a g-code. But postfix at least for now. e.g. not `X10`, bu
 | `Z`ero   |                      | Clear the display, erase all groups and areas |
 | `O`      | x y diameter color   | A filled in circle |
 | `P`oint  | x y P \[x y P ...\]  | Just a way to save a list of points | 
-| `L`ine   | color width          | A series of lines from saved 'P'oints (which are cleared) |
+| `L`ine   | color width          | A series of lines from 'P'oints. (can't enclose group id)  |
+| `S`hape  | x y P \[x y P ...\]  | A closed series of lines forming a shape. |
 | `R`ect   | x y width height     | A filled in rectangle (use Path for outlines) |
 | `T`ext   | x y color height     | Text. The characters are placed between the T and the attribues |
 | `M`ap    | pixel data           | See below|
@@ -44,7 +45,6 @@ It ends up a bit like a g-code. But postfix at least for now. e.g. not `X10`, bu
 | `C`olor    | RGB 565 value, use # for hex but only w/uppercase C to end |
 | `b`egin    | Starting arc degrees 0-360 |
 | `e`nd      | Ending arc degrees 0-360 |
-| `S`ize?    | Future features |
 | `F`ont?    |  " | 
 
 # Examples:
@@ -88,6 +88,19 @@ Direction is increased by the TFT_DIRECTION define modulus 4 to make portrait th
 Quotes can be included by double quoting. e.g. "" puts a " in the string. 
 
 ## Future
+
+### Graph
+
+Each set of points (called a series) is added using the 'G' opcode. So unlike the other shaps,
+Graphs are specified over and over as new data comes in. The other attributes can be set once 
+and re-used as long as other shapes don't need them in the mean time, but they must be correct.
+
+`10x20y400w200h 1,2,3,4G 1,3,3,3G 1,4,3,2G 1,5,3,1G`
+
+Draws a graph of 4 values, with 4 series. 
+
+The spacing between the lines is based on the height divided by the number of values; so it is
+very important to always provide the same number of values with each series.
 
 ### Arc
 

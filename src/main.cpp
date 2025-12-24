@@ -289,8 +289,13 @@ void loop() {
         );
         break;
 
-      case 'L': //Line
-        g_touchManager.addPolygon(points, attr[LTR('c')], attr[LTR('i')]);
+      case 'L': //Line, not closed, no group ID
+        g_touchManager.addPolygon(points, attr[LTR('c')], false, 0);
+        points.clear(); n = 0; radix = 10;
+        break;
+
+      case 'S': //Shape
+        g_touchManager.addPolygon(points, attr[LTR('c')], true, attr[LTR('i')] );
         points.clear(); n = 0; radix = 10;
         break;
 
@@ -310,7 +315,7 @@ void loop() {
         g_touchManager.addText(
           attr[LTR('x')], attr[LTR('y')], text.c_str(), attr[LTR('f')], 
           attr[LTR('c')], 
-          attr[LTR('s')] + 1, //size default is 1
+          attr[LTR('h')] + 1, //size (height) default is 1
           (attr[LTR('d')] + TFT_ORENTATION) % 4, //orentation; relate to display orientation
           attr[LTR('i')]  
         );
@@ -325,9 +330,9 @@ void loop() {
         series.push_back(n);
         n = 0; radix = 10;
         graph.push_back(series);
-        int y_count = attr[LTR('w')];
-        while (graph.size() > y_count) {
-          graph.erase(graph.begin());
+        int y_count = attr[LTR('w')]; //width is both pixel width and number of series
+        while (graph.size() > y_count) { //If this pushes series off the other side
+          graph.erase(graph.begin()); //trim them off
         }
         Serial1.println("");
         for (const auto& aseries : graph) {
