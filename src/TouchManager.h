@@ -53,6 +53,40 @@ struct TouchGroup {
   explicit TouchGroup(int groupID) : id(groupID) {}
 };
 
+struct TouchGraphs {
+  int id;
+  std::vector<std::vector<GFXPoint>> graph;
+  explicit TouchGraphs(int groupID, std::vector<GFXPoint> series) : id(groupID) {
+    graph.push_back(series);
+  }
+};
+
+//TODO: This should be private inside TouchManager, but then we can't access it in TouchGraph::draw
+std::vector<std::shared_ptr<TouchGraphs>> allGraphs;
+
+std::shared_ptr<TouchGraphs> getOrCreateGraph(int groupID, const std::vector<GFXPoint>& series = {}) {
+  if (!groupID) return nullptr;
+  auto it = std::find_if(allGraphs.begin(), allGraphs.end(),
+                          [groupID](const auto& graphPtr) {
+                            return graphPtr->id == groupID;
+                          });
+
+  if (it != allGraphs.end()) {
+    if (series.size() > 0) //add new series if provided
+      it->get()->graph.push_back(series);
+    return *it; // Return existing graph
+  }
+  
+  // Create new group only if series is provided
+  if (series.size() > 0) {
+    auto newGraph = std::make_shared<TouchGraphs>(groupID, series);
+    allGraphs.push_back(newGraph);
+    return newGraph;
+  }
+  
+  return nullptr;
+}
+
 
 // ----------------------------------------------------
 //  BASE CLASS FOR ALL SHAPES
@@ -146,6 +180,42 @@ public:
       gfx->fillCircle(x, y, d / 2, color);
     } else {
       gfx->drawCircle(x, y, d / 2, color);
+    }
+  }
+};
+
+/**
+ * @brief 'G' graph shape.
+ * Call once for each series to add data to the graph for a given ID.
+ */
+class TouchGraph : public TouchShape {
+public:
+  int x, y, w, h;
+  std::vector<GFXPoint> series;
+  TouchGraph(int _x, int _y, int _w, int _h, const std::vector<GFXPoint>& _points,
+               uint16_t _color, bool _filled, std::shared_ptr<TouchGroup> _group)
+    : TouchShape(_group, _color, _filled), series(_points), x(_x), y(_y), w(_w), h(_h) {}
+    
+  void draw(Adafruit_GFX* gfx) const override {
+    if (this->group == nullptr) return;
+    //Need to find the graph object matching this group ID but we don't have access to TouchManager's allGraphs or getOrCreateGraph here.
+    auto g = getOrCreateGraph(this->group ->id);
+
+    if (!g || g->graph.size() == 0 || g->graph[0].size() == 0) return;
+    int yh = h / g->graph[0].size(); //height per series
+    for (const auto& aseries : g->graph) {
+      int filling = (this->filled && (aseries.size() > 1)) ? 1 : 0;
+      for (size_t i = 0; i < aseries.size() - filling; ++i) {
+        int px = aseries[i].x + x;
+        int py = aseries[i].y + y*yh;
+        if (filling) {
+          int nx = aseries[i + 1].x + x;
+          int ny = aseries[i + 1].y + y*yh;
+          gfx->drawLine(px, py, nx, ny, color);
+        } else {
+          gfx->drawPixel(px, py, color);
+        }
+      }
     }
   }
 };
