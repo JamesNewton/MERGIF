@@ -71,12 +71,13 @@ Multiple objects can be part of a single group, just set the same id for each on
 
 A 25 pixel diameter green filled in circle at 100,35 in group 2.
 
-A live example with test code is available at:
+A live example with test code is available at:<br>
 https://wokwi.com/projects/446578045170487297
-press the green play button (hopefully it won't have to compile) and then you can enter 
+<br>press the green play button (hopefully it won't have to compile) and then you can enter 
 strings at the lower right for the interpreter. e.g:
 `1i 10x 100y 10h 50w #f800C R`
-to add a 10 by 50 pixel red rectangle at 10, 100. 
+to add a 10 by 50 pixel red rectangle at 10, 100. Please note that the sim is VERY MUCH
+slower than the real hardware. 
 
 
 ### Text / Font
