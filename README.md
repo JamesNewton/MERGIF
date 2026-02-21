@@ -77,7 +77,8 @@ https://wokwi.com/projects/446578045170487297
 strings at the lower right for the interpreter. e.g:
 `1i 10x 100y 10h 50w #f800C R`
 to add a 10 by 50 pixel red rectangle at 10, 100. Please note that the sim is VERY MUCH
-slower than the real hardware. 
+slower than the real hardware. Click on any object with an id, and it will send back a 
+message. Those messages could easily be in whatever data format you like. 
 
 
 ### Text / Font
